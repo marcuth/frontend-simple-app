@@ -1,30 +1,13 @@
 import { beforeEach, describe, expect, it, vi } from "vitest"
 
-import { prisma } from "../../helpers/prisma.helper"
-import * as jwtUtil from "../../utils/jwt.util"
-import * as passwordUtil from "../../utils/password.util"
-import { refresh, signIn, signUp } from "../auth.service"
+import { authService } from "../auth.service"
+import { api } from "../api"
 
-// Mock prisma and utilities
-vi.mock("../../helpers/prisma.helper", () => ({
-    prisma: {
-        user: {
-            findFirst: vi.fn(),
-            findUnique: vi.fn(),
-            create: vi.fn(),
-        },
+// Mock the API helper
+vi.mock("../api", () => ({
+    api: {
+        post: vi.fn(),
     },
-}))
-
-vi.mock("../../utils/jwt.util", () => ({
-    generateAccessToken: vi.fn(),
-    generateRefreshToken: vi.fn(),
-    verifyToken: vi.fn(),
-}))
-
-vi.mock("../../utils/password.util", () => ({
-    hashPassword: vi.fn(),
-    comparePassword: vi.fn(),
 }))
 
 describe("AuthService", () => {
@@ -33,136 +16,63 @@ describe("AuthService", () => {
     })
 
     describe("signUp", () => {
-        it("should successfully create a new user when everything is valid", async () => {
+        it("should successfully call the sign-up endpoint", async () => {
             const signUpData = {
                 name: "John Doe",
                 email: "john@example.com",
                 username: "johndoe",
                 password: "password123",
+                confirmPassword: "password123",
             }
 
-            vi.mocked(prisma.user.findFirst).mockResolvedValue(null)
-            vi.mocked(passwordUtil.hashPassword).mockResolvedValue("hashed_password")
-            vi.mocked(prisma.user.create).mockResolvedValue({
+            const mockUser = {
                 id: "user-id",
-                ...signUpData,
-                password: "hashed_password",
-                role: "USER",
-                apiKey: "api_key",
-                createdAt: new Date(),
-                updatedAt: new Date(),
-            } as any)
-
-            const result = await signUp(signUpData)
-
-            expect(prisma.user.findFirst).toHaveBeenCalledWith({
-                where: {
-                    OR: [{ email: signUpData.email }, { username: signUpData.username }],
-                },
-            })
-            expect(passwordUtil.hashPassword).toHaveBeenCalledWith("password123")
-            expect(prisma.user.create).toHaveBeenCalled()
-            expect(result).not.toHaveProperty("password")
-            expect(result.username).toBe("johndoe")
-        })
-
-        it("should throw error if user already exists", async () => {
-            const signUpData = {
                 name: "John Doe",
                 email: "john@example.com",
                 username: "johndoe",
-                password: "password123",
+                role: "USER" as const,
+                apiKey: "api_key",
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString(),
             }
 
-            vi.mocked(prisma.user.findFirst).mockResolvedValue({ id: "existing-user" } as any)
+            vi.mocked(api.post).mockResolvedValue(mockUser)
 
-            await expect(signUp(signUpData)).rejects.toThrow("Usuário ou e-mail já cadastrado")
+            const result = await authService.signUp(signUpData)
+
+            expect(api.post).toHaveBeenCalledWith("/auth/sign-up", signUpData)
+            expect(result).toEqual(mockUser)
         })
     })
 
     describe("signIn", () => {
-        it("should return tokens and user on successful sign in", async () => {
+        it("should successfully call the sign-in endpoint", async () => {
             const signInData = {
                 username: "johndoe",
                 password: "password123",
-            }
+            } as any
 
-            const user = {
+            const mockUser = {
                 id: "user-id",
-                name: "John Doe",
                 username: "johndoe",
-                email: "john@example.com",
-                password: "hashed_password",
-                role: "USER",
             }
 
-            vi.mocked(prisma.user.findUnique).mockResolvedValue(user as any)
-            vi.mocked(passwordUtil.comparePassword).mockResolvedValue(true)
-            vi.mocked(jwtUtil.generateAccessToken).mockReturnValue("access_token")
-            vi.mocked(jwtUtil.generateRefreshToken).mockReturnValue("refresh_token")
+            vi.mocked(api.post).mockResolvedValue(mockUser)
 
-            const result = await signIn(signInData)
+            const result = await authService.signIn(signInData)
 
-            expect(prisma.user.findUnique).toHaveBeenCalledWith({
-                where: { username: "johndoe" },
-            })
-            expect(passwordUtil.comparePassword).toHaveBeenCalledWith(
-                "password123",
-                "hashed_password"
-            )
-            expect(result.accessToken).toBe("access_token")
-            expect(result.refreshToken).toBe("refresh_token")
-            expect(result.user).not.toHaveProperty("password")
-        })
-
-        it("should throw error if user is not found", async () => {
-            vi.mocked(prisma.user.findUnique).mockResolvedValue(null)
-
-            await expect(signIn({ username: "wrong", password: "p" })).rejects.toThrow(
-                "Credenciais inválidas"
-            )
-        })
-
-        it("should throw error if password is wrong", async () => {
-            vi.mocked(prisma.user.findUnique).mockResolvedValue({ password: "hashed" } as any)
-            vi.mocked(passwordUtil.comparePassword).mockResolvedValue(false)
-
-            await expect(signIn({ username: "u", password: "wrong" })).rejects.toThrow(
-                "Credenciais inválidas"
-            )
+            expect(api.post).toHaveBeenCalledWith("/auth/sign-in", signInData)
+            expect(result).toEqual(mockUser)
         })
     })
 
-    describe("refresh", () => {
-        it("should return new tokens when refresh token is valid", async () => {
-            const refreshToken = "valid_refresh_token"
-            const payload = { sub: "user-id" }
-            const user = { id: "user-id", username: "johndoe", role: "USER" }
+    describe("signOut", () => {
+        it("should call the sign-out endpoint", async () => {
+            vi.mocked(api.post).mockResolvedValue(undefined)
 
-            vi.mocked(jwtUtil.verifyToken).mockReturnValue(payload as any)
-            vi.mocked(prisma.user.findUnique).mockResolvedValue(user as any)
-            vi.mocked(jwtUtil.generateAccessToken).mockReturnValue("new_access_token")
-            vi.mocked(jwtUtil.generateRefreshToken).mockReturnValue("new_refresh_token")
+            await authService.signOut()
 
-            const result = await refresh(refreshToken)
-
-            expect(jwtUtil.verifyToken).toHaveBeenCalledWith(refreshToken, "refresh")
-            expect(prisma.user.findUnique).toHaveBeenCalledWith({ where: { id: "user-id" } })
-            expect(result.accessToken).toBe("new_access_token")
-            expect(result.refreshToken).toBe("new_refresh_token")
-        })
-
-        it("should throw error if payload is invalid", async () => {
-            vi.mocked(jwtUtil.verifyToken).mockReturnValue(null as any)
-
-            await expect(refresh("invalid")).rejects.toThrow("Token inválido ou expirado")
-        })
-
-        it("should throw error if user is not found", async () => {
-            vi.mocked(jwtUtil.verifyToken).mockReturnValue({ sub: "no-one" } as any)
-            vi.mocked(prisma.user.findUnique).mockResolvedValue(null)
-
-            await expect(refresh("token")).rejects.toThrow("Usuário não encontrado")
+            expect(api.post).toHaveBeenCalledWith("/auth/sign-out")
         })
     })
 })

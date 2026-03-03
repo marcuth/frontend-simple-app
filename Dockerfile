@@ -12,11 +12,12 @@ WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
-# Generate Prisma Client
-RUN npx prisma generate
-
 # Disable Next.js telemetry
 ENV NEXT_TELEMETRY_DISABLED 1
+
+# Environment variables needed for build time (if any)
+# ARG NEXT_PUBLIC_API_URL
+# ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
 
 RUN npm run build
 
@@ -43,10 +44,10 @@ COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
 USER nextjs
 
-EXPOSE 3000
+EXPOSE 3333
 
-ENV PORT 3000
-# set hostname to localhost
+ENV PORT 3333
+# set hostname to 0.0.0.0 for containerized environments
 ENV HOSTNAME "0.0.0.0"
 
 CMD ["node", "server.js"]
