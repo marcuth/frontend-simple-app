@@ -42,6 +42,66 @@ Este projeto é um **Template Frontend** moderno focado em consumir APIs externa
 - **Aspas:** Aspas duplas (`"`).
 - **Sem Comentários:** Mantenha o código autoexplicativo.
 
+
+## 🎨 UI & Design (Shadcn UI)
+
+Utilizamos o Shadcn UI para uma interface premium e consistente. 
+
+> [!IMPORTANT]
+> - O componente `Form` foi substituído pelo `Field`.
+> - O componente `Toast` foi substituído pelo `Sonner`.
+> - **CRÍTICO**: Todo e qualquer texto exibido na interface **DEVE** utilizar o componente `Typography`. Nunca utilize tags HTML nativas de texto (`<h1>`, `<h2>`, `<p>`, `<span>`, `<small>`, etc.) diretamente nas páginas ou componentes.
+> - **CRÍTICO**: Todo e qualquer link estilizado **DEVE** utilizar o componente `Link` (`@/components/ui/link`). Nunca utilize a tag `<a>` nativa diretamente. O componente detecta automaticamente links externos (abre em nova aba com ícone) e internos (usa `next/link`).
+
+### Uso do Typography
+Importe e utilize sempre os subcomponentes do `Typography` para garantir consistência tipográfica:
+
+```tsx
+import { Typography } from "@/components/ui/typography"
+
+// Títulos
+<Typography.H1>Título principal</Typography.H1>
+<Typography.H2>Subtítulo</Typography.H2>
+<Typography.H3>Seção</Typography.H3>
+<Typography.H4>Subseção</Typography.H4>
+<Typography.H5>Menor</Typography.H5>
+<Typography.H6>Mínimo</Typography.H6>
+
+// Textos
+<Typography.P>Parágrafo comum</Typography.P>
+<Typography.Lead>Texto de destaque / subtítulo de página</Typography.Lead>
+<Typography.Large>Texto um pouco maior</Typography.Large>
+<Typography.Small>Texto pequeno</Typography.Small>
+<Typography.Muted>Texto secundário / dica</Typography.Muted>
+
+// Especiais
+<Typography.Code>código inline</Typography.Code>
+<Typography.Blockquote>citação</Typography.Blockquote>
+<Typography.List><Typography.ListItem>item</Typography.ListItem></Typography.List>
+<Typography.OrderedList><Typography.ListItem>item</Typography.ListItem></Typography.OrderedList>
+```
+
+### Componentes Disponíveis
+Para adicionar um novo componente, use: `npx shadcn@latest add <nome-do-componente>` (em lowercase kebab-case).
+
+| | | | |
+|---|---|---|---|
+| Accordion | Alert | Alert Dialog | Aspect Ratio |
+| Avatar | Badge | Breadcrumb | Button |
+| Button Group | Calendar | Card | Carousel |
+| Chart | Checkbox | Collapsible | Combobox |
+| Command | Context Menu | Data Table | Date Picker |
+| Dialog | Direction | Drawer | Dropdown Menu |
+| Empty | **Field** (Form) | Hover Card | Input |
+| Input Group | Input OTP | Item | Kbd |
+| Label | Menubar | Native Select | Navigation Menu |
+| Pagination | Popover | Progress | Radio Group |
+| Resizable | Scroll Area | Select | Separator |
+| Sheet | Sidebar | Skeleton | Slider |
+| **Sonner** (Toast) | Spinner | Switch | Table |
+| Tabs | Textarea | Toggle | Toggle Group |
+| Tooltip | Typography | | |
+
 ---
 
 ## 🤖 Diretrizes para Agentes AI
